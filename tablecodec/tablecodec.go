@@ -86,7 +86,7 @@ func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	}
 	if !(key[0] == recordPrefixSep[0] && key[1] == recordPrefixSep[1]) {
 		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", k)
-	} 
+	}
 	key = key[recordPrefixSepLength:]
 	key, handle, err = codec.DecodeInt(key)
 	if err != nil {
@@ -98,14 +98,14 @@ func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 // appendTableIndexPrefix appends table index prefix  "t[tableID]_i".
 func appendTableIndexPrefix(buf []byte, tableID int64) []byte {
 	buf = append(buf, tablePrefix...)
-	buf = codec.EncodeInt(buf, tableID) 
+	buf = codec.EncodeInt(buf, tableID)
 	buf = append(buf, indexPrefixSep...)
 	return buf
 }
 
 // EncodeIndexSeekKey encodes an index value to kv.Key.
 func EncodeIndexSeekKey(tableID int64, idxID int64, encodedValue []byte) kv.Key {
-	key := make([]byte, 0, prefixLen+len(encodedValue)) 
+	key := make([]byte, 0, prefixLen+len(encodedValue))
 	key = appendTableIndexPrefix(key, tableID)
 	key = codec.EncodeInt(key, idxID)
 	key = append(key, encodedValue...)
@@ -126,7 +126,7 @@ func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues
 	}
 	if !(key[0] == indexPrefixSep[0] && key[1] == indexPrefixSep[1]) {
 		return 0, 0, nil, errInvalidKey.GenWithStack("invalid key - %q", k)
-	} 
+	}
 	key = key[len(indexPrefixSep):]
 	indexValues, indexID, err = codec.DecodeInt(key)
 	if err != nil {
