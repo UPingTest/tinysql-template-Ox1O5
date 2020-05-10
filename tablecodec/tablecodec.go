@@ -72,20 +72,40 @@ func EncodeRowKeyWithHandle(tableID int64, handle int64) kv.Key {
 // DecodeRecordKey decodes the key and gets the tableID, handle.
 func DecodeRecordKey(key kv.Key) (tableID int64, handle int64, err error) {
 	/* Your code here */
+	if len(key) <= prefixLen {
+		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", key)
+	}
+	k := key
+	if key[0] != tablePrefix[0] {
+		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", k)
+	}
+	key = key[tablePrefixLength:]
+	key, tableID, err = codec.DecodeInt(key)
+	if err != nil {
+		return 0, 0, errors.Trace(err)
+	}
+	if !(key[0] == recordPrefixSep[0] && key[1] == recordPrefixSep[1]) {
+		return 0, 0, errInvalidKey.GenWithStack("invalid key - %q", k)
+	} 
+	key = key[recordPrefixSepLength:]
+	key, handle, err = codec.DecodeInt(key)
+	if err != nil {
+		return 0, 0, errors.Trace(err)
+	}
 	return
 }
 
 // appendTableIndexPrefix appends table index prefix  "t[tableID]_i".
 func appendTableIndexPrefix(buf []byte, tableID int64) []byte {
 	buf = append(buf, tablePrefix...)
-	buf = codec.EncodeInt(buf, tableID)
+	buf = codec.EncodeInt(buf, tableID) 
 	buf = append(buf, indexPrefixSep...)
 	return buf
 }
 
 // EncodeIndexSeekKey encodes an index value to kv.Key.
 func EncodeIndexSeekKey(tableID int64, idxID int64, encodedValue []byte) kv.Key {
-	key := make([]byte, 0, prefixLen+len(encodedValue))
+	key := make([]byte, 0, prefixLen+len(encodedValue)) 
 	key = appendTableIndexPrefix(key, tableID)
 	key = codec.EncodeInt(key, idxID)
 	key = append(key, encodedValue...)
@@ -95,6 +115,23 @@ func EncodeIndexSeekKey(tableID int64, idxID int64, encodedValue []byte) kv.Key 
 // DecodeIndexKeyPrefix decodes the key and gets the tableID, indexID, indexValues.
 func DecodeIndexKeyPrefix(key kv.Key) (tableID int64, indexID int64, indexValues []byte, err error) {
 	/* Your code here */
+	k := key
+	if key[0] != tablePrefix[0] {
+		return 0, 0, nil, errInvalidKey.GenWithStack("invalid key - %q", k)
+	}
+	key = key[tablePrefixLength:]
+	key, tableID, err = codec.DecodeInt(key)
+	if err != nil {
+		return 0, 0, nil, errors.Trace(err)
+	}
+	if !(key[0] == indexPrefixSep[0] && key[1] == indexPrefixSep[1]) {
+		return 0, 0, nil, errInvalidKey.GenWithStack("invalid key - %q", k)
+	} 
+	key = key[len(indexPrefixSep):]
+	indexValues, indexID, err = codec.DecodeInt(key)
+	if err != nil {
+		return 0, 0, nil, errors.Trace(err)
+	}
 	return tableID, indexID, indexValues, nil
 }
 
