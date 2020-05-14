@@ -3805,11 +3805,46 @@ IndexHintListOpt:
 
 JoinTable:
 	/* Use %prec to evaluate production TableRef before cross join */
+	/*
+	*joined_table: { 
+	*	table_reference [INNER | CROSS] JOIN table_factor [join_specification]
+	*	| table_reference STRAIGHT_JOIN table_factor
+	*	| table_reference STRAIGHT_JOIN table_factor ON search_condition
+	*	| table_reference {LEFT|RIGHT} [OUTER] JOIN table_reference join_specification
+	*	| table_reference NATURAL [{LEFT|RIGHT} [OUTER]] JOIN table_factor
+	*	}
+	* 	the Join struct in ast/dml.go is:
+		// Join represents table join.
+		type Join struct {
+			node
+			// Left table can be TableSource or JoinNode.
+			Left ResultSetNode
+			// Right table can be TableSource or JoinNode or nil.
+			Right ResultSetNode
+			// Tp represents join type.
+			Tp JoinType
+			// On represents join on condition.
+			On *OnCondition
+		}
+		So, just implement clause:
+		    table_reference [INNER | CROSS] JOIN table_factor [join_specification]
+			table_reference {LEFT|RIGHT} [OUTER] JOIN table_reference join_specification
+ 	*/
 	TableRef CrossOpt TableRef %prec tableRefPriority
 	{
 		$$ = &ast.Join{Left: $1.(ast.ResultSetNode), Right: $3.(ast.ResultSetNode), Tp: ast.CrossJoin}
 	}
 	/* Your code here. */
+|	TableRef CrossOpt TableRef "ON" Expression
+	{
+		on := &ast.OnCondition{Expr: $5}
+		$$ = &ast.Join{Left: $1.(ast.ResultSetNode), Right: $3.(ast.ResultSetNode), Tp: ast.CrossJoin, On: on}
+	}
+|	TableRef JoinType OuterOpt "JOIN" TableRef "ON" Expression
+	{
+		on := &ast.OnCondition{Expr: $7}
+		$$ = &ast.Join{Left: $1.(ast.ResultSetNode), Right: $5.(ast.ResultSetNode), Tp: $2.(ast.JoinType), On: on}
+	}
 
 JoinType:
 	"LEFT"

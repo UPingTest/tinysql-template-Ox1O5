@@ -19,3 +19,11 @@
 ## 评分
 
 通过 `TestDMLStmt` 即可满分。
+
+## 个人对proj2的补充
+[SQL join clause语法](https://dev.mysql.com/doc/refman/5.7/en/join.html)
+[Bison 材料](https://dev.mysql.com/doc/refman/5.7/en/join.html)
+[Join Table语法](https://pingcap.github.io/sqlgram/#JoinTable)
+[parser原理](https://www.jianshu.com/p/c46bdbcc03d5)
+
+最后别忘了在parser根目录下make parser才可以生成新的parser.go
